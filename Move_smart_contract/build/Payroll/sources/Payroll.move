@@ -63,6 +63,35 @@ module Payroll_addr::Payroll {
         };
         vector::push_back(&mut payroll.employees, employee);
     }
+    public fun record_hours(
+        payroll: &mut PayrollSystem,
+        id: u64,
+        hours_worked: u64,
+        overtime_hours: u64
+    ) {
+        let employee = find_employee(&mut payroll.employees, id);
+        employee.hours_worked = employee.hours_worked + hours_worked;
+        employee.overtime_hours = employee.overtime_hours + overtime_hours;
+        payroll.total_hours = payroll.total_hours + hours_worked;
+        payroll.total_overtime =payroll.total_overtime + overtime_hours;
+    }
+
+        public fun find_employee(employees: &mut vector<Employee>, id: u64): &mut Employee {
+        let  i = 0; // Declare and initialize i
+        let length = vector::length(employees);
+        
+        while (i < length) {
+            let employee = vector::borrow_mut(employees, i);
+            if (employee.id == id) {
+                return employee;
+            };
+            i=i+1;
+        };
+         abort 1
+        
+
+    }
+
 
 
 
