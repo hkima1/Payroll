@@ -1,11 +1,13 @@
 module Payroll_addr::Payroll {
+    use Payroll_addr::ERC20Token;
     use aptos_framework::event;
     use std::signer;
     use aptos_std::vector;
     use aptos_std::table::Table;
+    use aptos_framework::account;
 
 
-    struct Employee {
+    struct Employee has copy{
         id: u64,
         address: address,
         hourly_rate: u64,
@@ -27,17 +29,19 @@ module Payroll_addr::Payroll {
         total_payroll_errors: u64,
     }
 
-    struct PreCheckEvent {
+    #[event]
+    struct PreCheckEvent has drop, store, key {
         employee_id: u64,
         address: address,
     }
-        public fun initialize(_sender: &signer): PayrollSystem {
-        PayrollSystem {
-            employees: vector::empty(),
-            total_hours: 0,
-            total_overtime: 0,
-            total_payroll_errors: 0,
-        }
+
+    public fun initialize(_sender: &signer): PayrollSystem {
+    PayrollSystem {
+        employees: vector::empty(),
+        total_hours: 0,
+        total_overtime: 0,
+        total_payroll_errors: 0,
+    }
     }
     public fun add_employee(
         payroll: &mut PayrollSystem,
@@ -63,6 +67,8 @@ module Payroll_addr::Payroll {
         };
         vector::push_back(&mut payroll.employees, employee);
     }
+
+
     public fun record_hours(
         payroll: &mut PayrollSystem,
         id: u64,
@@ -76,24 +82,98 @@ module Payroll_addr::Payroll {
         payroll.total_overtime =payroll.total_overtime + overtime_hours;
     }
 
-        public fun find_employee(employees: &mut vector<Employee>, id: u64): &mut Employee {
-        let  i = 0; // Declare and initialize i
+     
+    public fun find_employee(employees: &mut vector<Employee>, id: u64): &mut Employee {
         let length = vector::length(employees);
-        
+        let i = 0;
+
         while (i < length) {
             let employee = vector::borrow_mut(employees, i);
             if (employee.id == id) {
                 return employee;
             };
-            i=i+1;
+            i = i + 1;
         };
-         abort 1
-        
+        abort 1 // Employee not found
+    }
+
+    public fun calculate_pay(employee: &Employee): u64 {
+    (employee.hours_worked * employee.hourly_rate) + (employee.overtime_hours * employee.overtime_rate)
 
     }
 
+    public fun send_pre_check(payroll: &PayrollSystem, current_day: u64) {
+        let length = vector::length(&payroll.employees);
+        let  i = 0;
+        while (i < length) {
+            let employee = vector::borrow(&payroll.employees, i);
 
+            // Emit pre-check event
+            event::emit<PreCheckEvent>(
+            PreCheckEvent {
+                employee_id: employee.id,
+                address: employee.address,
+            },
+        );
+            i = i+ 1;
+        }
+    }
 
+    public fun confirm(){
 
-    
+    }
+    public fun confirm_employee(payroll: &mut PayrollSystem, employee_id: u64, confirmation: bool) {
+        let employee = find_employee(&mut payroll.employees, employee_id);
+        employee.confirmed = confirmation;
+    }
+
+    public fun confirm_and_pay(payroll: &mut PayrollSystem, token: &mut ERC20Token::Token, payer: &signer, current_day: u64) {
+        let length = vector::length(&payroll.employees);
+        let i = 0;
+        while (i < length) {
+            let employee = vector::borrow_mut(&mut payroll.employees, i);
+            if (employee.confirmed && employee.last_paid_day != current_day) {
+                let pay = calculate_pay(employee);
+                ERC20Token::transfer(token, payer, employee.address, pay);
+                employee.hours_worked = 0; // Reset hours worked after payment
+                employee.overtime_hours = 0; // Reset overtime hours after payment
+                employee.last_paid_day = current_day; // Update last paid day
+                employee.confirmed = false; // Reset confirmation status
+            };
+            i = i+ 1;
+        }
+    }
+
+    public fun get_employees_by_role(payroll: &PayrollSystem, role: vector<u8>): vector<Employee> {
+        let employees_with_role = vector::empty<Employee>();
+        let length = vector::length(&payroll.employees);
+        let i = 0;
+        while (i < length) {
+            let employee = vector::borrow(&payroll.employees, i);
+            if (employee.role == role) {
+                vector::push_back(&mut employees_with_role, *employee);
+            };
+            i = i+1;
+        };
+        employees_with_role
+    }
+
+    public fun pay_employee(payer: &signer, payee: &address, amount: u64) {
+        // Function to pay employee (can be kept for other payment mechanisms)
+    }
+    public fun get_employee_characteristics(payroll: &PayrollSystem, sender: &signer): Employee {
+        let sender_address = signer::address_of(sender);
+        let length = vector::length(&payroll.employees);
+        let i = 0;
+
+        while (i < length) {
+            let employee = vector::borrow(&payroll.employees, i);
+            if (employee.address == sender_address) {
+                return *employee;
+            };
+            i = i + 1;
+        };
+        abort 1 // Employee not found
+    }
 }
+
