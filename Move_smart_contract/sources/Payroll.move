@@ -1,5 +1,5 @@
-module Payroll_addr::Payroll {
-    use Payroll_addr::ERC20Token;
+module Payroll_addr::PayrollV2 {
+    use Payroll_addr::ERC20TokenV2;
     use aptos_framework::event;
     use std::signer;
     use aptos_std::vector;
@@ -7,7 +7,7 @@ module Payroll_addr::Payroll {
     use aptos_framework::account;
 
 
-    struct Employee has copy{
+    struct Employee has key, store, copy{
         id: u64,
         address: address,
         hourly_rate: u64,
@@ -22,7 +22,7 @@ module Payroll_addr::Payroll {
         confirmed: bool, // New property to store confirmation status
     }
 
-    struct PayrollSystem {
+    struct PayrollSystem has key{
         employees: vector<Employee>,
         total_hours: u64,
         total_overtime: u64,
@@ -127,14 +127,14 @@ module Payroll_addr::Payroll {
         employee.confirmed = confirmation;
     }
 
-    public fun confirm_and_pay(payroll: &mut PayrollSystem, token: &mut ERC20Token::Token, payer: &signer, current_day: u64) {
+    public fun confirm_and_pay(payroll: &mut PayrollSystem, token: &mut ERC20TokenV2::Token, payer: &signer, current_day: u64) {
         let length = vector::length(&payroll.employees);
         let i = 0;
         while (i < length) {
             let employee = vector::borrow_mut(&mut payroll.employees, i);
             if (employee.confirmed && employee.last_paid_day != current_day) {
                 let pay = calculate_pay(employee);
-                ERC20Token::transfer(token, payer, employee.address, pay);
+                ERC20TokenV2::transfer(token, payer, employee.address, pay);
                 employee.hours_worked = 0; // Reset hours worked after payment
                 employee.overtime_hours = 0; // Reset overtime hours after payment
                 employee.last_paid_day = current_day; // Update last paid day
@@ -161,19 +161,23 @@ module Payroll_addr::Payroll {
     public fun pay_employee(payer: &signer, payee: &address, amount: u64) {
         // Function to pay employee (can be kept for other payment mechanisms)
     }
-    public fun get_employee_characteristics(payroll: &PayrollSystem, sender: &signer): Employee {
-        let sender_address = signer::address_of(sender);
+    
+    #[view]
+    public fun get_employee_characteristics(account_address: address): Employee acquires PayrollSystem {
+        let payroll = borrow_global<PayrollSystem>(account_address);
         let length = vector::length(&payroll.employees);
         let i = 0;
 
         while (i < length) {
             let employee = vector::borrow(&payroll.employees, i);
-            if (employee.address == sender_address) {
+            if (employee.address == account_address) {
                 return *employee;
             };
             i = i + 1;
         };
+
         abort 1 // Employee not found
     }
+
 }
 

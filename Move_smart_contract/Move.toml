@@ -1,6 +1,6 @@
 [package]
-name = "Payroll"
-version = "1.0.0"
+name = "PayrollV2"
+version = "1.3.0"
 authors = []
 
 [addresses]
