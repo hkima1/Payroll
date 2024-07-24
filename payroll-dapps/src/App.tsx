@@ -4,6 +4,7 @@ import './App.css';
 import { WalletSelector } from "@aptos-labs/wallet-adapter-ant-design";
 import "@aptos-labs/wallet-adapter-ant-design/dist/index.css";
 import Employee from './Employee'
+import Org from './Org';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
   <WalletSelector />
 </h1>
 <Employee/>
+<Org/>
     </div>
   );
 }

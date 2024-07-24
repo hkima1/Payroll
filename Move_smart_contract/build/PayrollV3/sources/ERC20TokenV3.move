@@ -1,4 +1,4 @@
-module Payroll_addr::ERC20TokenV2 {
+module Payroll_addr::ERC20TokenV3 {
     use std::signer;
     use aptos_std::vector;
     use aptos_framework::event::{EventHandle, emit_event};

@@ -1,5 +1,5 @@
-module Payroll_addr::PayrollV2 {
-    use Payroll_addr::ERC20TokenV2;
+module Payroll_addr::PayrollV3 {
+    use Payroll_addr::ERC20TokenV3;
     use aptos_framework::event;
     use std::signer;
     use aptos_std::vector;
@@ -23,6 +23,7 @@ module Payroll_addr::PayrollV2 {
     }
 
     struct PayrollSystem has key{
+        owner_address: address,
         employees: vector<Employee>,
         total_hours: u64,
         total_overtime: u64,
@@ -35,22 +36,26 @@ module Payroll_addr::PayrollV2 {
         address: address,
     }
 
-    public fun initialize(_sender: &signer): PayrollSystem {
-    PayrollSystem {
-        employees: vector::empty(),
-        total_hours: 0,
-        total_overtime: 0,
-        total_payroll_errors: 0,
+    public fun initialize(account: &signer){
+        let owner_address = signer::address_of(account);
+        let payroll_system = PayrollSystem {
+            owner_address,
+            employees: vector::empty(),
+            total_hours: 0,
+            total_overtime: 0,
+            total_payroll_errors: 0,
+        };
+        move_to(account, payroll_system) // This will store the resource under the account's address
     }
-    }
-    public fun add_employee(
-        payroll: &mut PayrollSystem,
+    public entry fun add_employee(
+        account: &signer,
         id: u64,
         address: address,
         hourly_rate: u64,
         overtime_rate: u64,
         role: vector<u8>
-    ) {
+    ) acquires PayrollSystem  {
+        let payroll = borrow_global_mut<PayrollSystem>(signer::address_of(account));
         let employee = Employee {
             id,
             address,
@@ -127,14 +132,14 @@ module Payroll_addr::PayrollV2 {
         employee.confirmed = confirmation;
     }
 
-    public fun confirm_and_pay(payroll: &mut PayrollSystem, token: &mut ERC20TokenV2::Token, payer: &signer, current_day: u64) {
+    public fun confirm_and_pay(payroll: &mut PayrollSystem, token: &mut ERC20TokenV3::Token, payer: &signer, current_day: u64) {
         let length = vector::length(&payroll.employees);
         let i = 0;
         while (i < length) {
             let employee = vector::borrow_mut(&mut payroll.employees, i);
             if (employee.confirmed && employee.last_paid_day != current_day) {
                 let pay = calculate_pay(employee);
-                ERC20TokenV2::transfer(token, payer, employee.address, pay);
+                ERC20TokenV3::transfer(token, payer, employee.address, pay);
                 employee.hours_worked = 0; // Reset hours worked after payment
                 employee.overtime_hours = 0; // Reset overtime hours after payment
                 employee.last_paid_day = current_day; // Update last paid day

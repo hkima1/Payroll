@@ -12,12 +12,13 @@ function Employee() {
     const { account } = useWallet();
 
     useEffect(() => {
-        fetchEmplyee();
-        fetchRes();
+      fetchPayrollSystemResource();
+        //fetchEmplyee();
+        //fetchRes();
       }, [account?.address]);
       
 
-    const fetchEmplyee = async () => {
+    /*const fetchEmplyee = async () => {
     if (!account) return [];
     // change this to be your module account address
     const CONTRACT_ADDRESS = "7b3a1639f5fbe11f3a92ca1257bb1e9be4742a3ba99a27448dbfe11963d60a55";
@@ -27,24 +28,31 @@ function Employee() {
       };
     //const response = await aptosClient.view({ payload });
 
+    };*/
+    const moduleAddress = "7b3a1639f5fbe11f3a92ca1257bb1e9be4742a3ba99a27448dbfe11963d60a55";
+    const fetchPayrollSystemResource = async () => {
+      if (!account) return [];
+      
+      try {
+        const payrollSystemResource = await aptosClient.getAccountResource({
+          accountAddress: account.address,
+          resourceType: `${moduleAddress}::PayrollV3::PayrollSystem`
+        });
+        console.log("PayrollSystem resource fetched successfully:", payrollSystemResource);
+        // Access the Employee data within the PayrollSystem resource
+        const employees = payrollSystemResource.data.employees;
+        console.log("Employees:", employees);
+      } catch (e) {
+        console.error("Failed to fetch PayrollSystem resource:", e);
+      }
     };
-    const fetchRes = async () => {
-        if (!account) return [];
-        // change this to be your module account address
-        const moduleAddress = "7b3a1639f5fbe11f3a92ca1257bb1e9be4742a3ba99a27448dbfe11963d60a55";
-        try {
-          const todoListResource = await aptosClient.getAccountResource(
-            {
-              accountAddress:account?.address,
-              resourceType:`${moduleAddress}::PayrollV2::Employee`
-            }
-          );
-          console.log("vectoire");
-        } catch (e: any) {
-          console.log("lose")
-        }
-      };
-  
+    
+    // Call the function to fetch the PayrollSystem resource
+    fetchPayrollSystemResource();
+    
+    
+
+
     return (
     <div>
       <h1>Employee Section</h1>
