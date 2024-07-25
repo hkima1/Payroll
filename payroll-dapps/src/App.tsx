@@ -12,8 +12,8 @@ function App() {
      <h1  style={{ textAlign: "right", paddingRight: "200px" }}>
   <WalletSelector />
 </h1>
-<Employee/>
 <Org/>
+<Employee/>
     </div>
   );
 }
