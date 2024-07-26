@@ -1,6 +1,6 @@
 [package]
-name = "PayrollV4"
-version = "1.5.0"
+name = "PayrollV5"
+version = "1.5.1"
 authors = []
 
 [addresses]
@@ -10,7 +10,7 @@ Payroll_addr='7b3a1639f5fbe11f3a92ca1257bb1e9be4742a3ba99a27448dbfe11963d60a55'
 
 [dependencies.AptosFramework]
 git = "https://github.com/aptos-labs/aptos-core.git"
-rev = "mainnet"
+rev = "devnet"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]

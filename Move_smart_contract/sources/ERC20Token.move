@@ -1,4 +1,4 @@
-module Payroll_addr::ERC20TokenV4 {
+module Payroll_addr::ERC20TokenV5 {
     use std::signer;
     use aptos_std::vector;
     use aptos_framework::event::{EventHandle, emit_event};
@@ -6,7 +6,7 @@ module Payroll_addr::ERC20TokenV4 {
     use aptos_framework::event;
 
 
-    struct Token has key {
+    struct Token has key, copy , store{
     name: vector<u8>,
     total_supply: u64,
     symbol: vector<u8>,

@@ -1,5 +1,5 @@
-module Payroll_addr::PayrollV4 {
-    use Payroll_addr::ERC20TokenV4;
+module Payroll_addr::PayrollV5 {
+    use Payroll_addr::ERC20TokenV5;
     use aptos_framework::event;
     use std::signer;
     use aptos_std::vector;
@@ -107,7 +107,7 @@ module Payroll_addr::PayrollV4 {
     // Searching for employer by their work ::
 
      #[view]
-    public fun get_employees_by_role( account_address: address, role: vector<u8>): vector<Employee> acquires PayrollSystem {
+    public fun get_employees_by_role( address: address, role: vector<u8>): vector<Employee> acquires PayrollSystem {
         let payroll = borrow_global_mut<PayrollSystem>(account_address);
         let employees_with_role = vector::empty<Employee>();
         let length = vector::length(&payroll.employees);
@@ -129,19 +129,22 @@ module Payroll_addr::PayrollV4 {
         while (i < length) {
             let employee = vector::borrow_mut(employees, i);
             if (employee.id == id) {
-                return employee;
+                return employee
             };
             i = i + 1;
         };
         abort 1 // Employee not found
     }
 
-    public fun record_hours(
-        payroll: &mut PayrollSystem,
+    public entry fun record_hours(
+        account: &signer,
         id: u64,
         hours_worked: u64,
         overtime_hours: u64
-    ) {
+    ) acquires PayrollSystem{
+        let caller_address = signer::address_of(account);
+        let payroll = borrow_global_mut<PayrollSystem>(caller_address);
+        assert!(payroll.owner_address == caller_address, E_NOT_OWNER);
         let employee = find_employee(&mut payroll.employees, id);
         employee.hours_worked = employee.hours_worked + hours_worked;
         employee.overtime_hours = employee.overtime_hours + overtime_hours;
@@ -162,8 +165,11 @@ module Payroll_addr::PayrollV4 {
 
     
 
-    // Function to get all PreCheckEvents
-    public fun send_pre_check(payroll: &PayrollSystem, current_day: u64, msg: vector<u8>) {
+    // Function to send all PreCheckEvents
+    public entry fun send_pre_check( account: &signer,current_day: u64, msg: vector<u8>) acquires PayrollSystem {
+        let caller_address = signer::address_of(account);
+        let payroll = borrow_global_mut<PayrollSystem>(caller_address);
+        assert!(payroll.owner_address == caller_address, E_NOT_OWNER);
             let length = vector::length(&payroll.employees);
             let  i = 0;
             while (i < length) {
@@ -182,14 +188,18 @@ module Payroll_addr::PayrollV4 {
         }
 
     // Sending Tokens to Employees
-    public fun confirm_and_pay(payroll: &mut PayrollSystem, token: &mut ERC20TokenV4::Token, payer: &signer, current_day: u64) {
-        let length = vector::length(&payroll.employees);
+    /*public entry fun confirm_and_pay(account:&signer, payer: &signer, current_day: u64) acquires PayrollSystem{
+        let caller_address = signer::address_of(account);
+        let payroll = borrow_global_mut<PayrollSystem>(caller_address); // Moved this line up
+        let length = vector::length<Employee>(&payroll.employees); // Assuming Employee is the type
+        assert!(payroll.owner_address == caller_address, E_NOT_OWNER);
+        let token = ERC20TokenV5::borrow_token(account);
         let i = 0;
         while (i < length) {
             let employee = vector::borrow_mut(&mut payroll.employees, i);
             if (employee.confirmed && employee.last_paid_day != current_day) {
                 let pay = calculate_pay(employee);
-                ERC20TokenV4::transfer(token, payer, employee.address, pay);
+                ERC20TokenV5::transfer(token, payer, employee.address, pay);
                 employee.hours_worked = 0; // Reset hours worked after payment
                 employee.overtime_hours = 0; // Reset overtime hours after payment
                 employee.last_paid_day = current_day; // Update last paid day
@@ -197,8 +207,7 @@ module Payroll_addr::PayrollV4 {
             };
             i = i+ 1;
         }
-    }
-
+    }*/
     
 
     // Paying Employees by crypto if needed (just function abstract)  ::
@@ -245,7 +254,7 @@ module Payroll_addr::PayrollV4 {
         while (i < length) {
             let employee = vector::borrow(&payroll.employees, i);
             if (employee.address == account_address) {
-                return *employee;
+                return *employee
             };
             i = i + 1;
         };
@@ -267,12 +276,12 @@ module Payroll_addr::PayrollV4 {
             if (employee.address == signer_address) {
                 // The signer's address matches the employee's address
                 employee.confirmed = confirmation;
-                return;
+                return
             };
             index = index + 1;
         };
 
-        abort(E_EMPLOYEE_NOT_FOUND); // Employee not found
+        abort(E_EMPLOYEE_NOT_FOUND) // Employee not found
     }
 
 

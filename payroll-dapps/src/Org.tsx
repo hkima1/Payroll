@@ -27,11 +27,13 @@ function Org() {
 
 
 
-  const [employeeId, setEmployeeId] = useState('NONE');
-  const [employeeAddress, setEmployeeAddress] = useState('NONE');
-  const [hourlyRate, setHourlyRate] = useState('NONE');
-  const [overtimeRate, setOvertimeRate] = useState('NONE');
-  const [role, setRole] = useState('NONE');
+  const [employeeId, setEmployeeId] = useState('');
+  const [employeeAddress, setEmployeeAddress] = useState('');
+  const [hourlyRate, setHourlyRate] = useState('');
+  const [overtimeRate, setOvertimeRate] = useState('');
+  const [role, setRole] = useState('');
+  const [role1, setRole1] = useState('');
+  const[employee, setEmployee] = useState<Employee>();
   const[employees, setEmployees] = useState<Employee[]>([ {
     id: "NONE",
     address: "NONE",
@@ -55,11 +57,11 @@ function Org() {
     //addemployee();
     
     }, [account?.address]);
-/*
+
     const callInitialize = async () => {
       const transaction:InputTransactionData = {
         data: {
-          function:`${moduleAddress}::PayrollV4::initialize`,
+          function:`${moduleAddress}::PayrollV5::initialize`,
           functionArguments:[]
         }
       }
@@ -73,21 +75,27 @@ function Org() {
         console.log("payroll system isn't initialized");
       }
     };
-    callInitialize();
+    //callInitialize();
 
 
-/*
+    function stringToHex(str: string): string {
+      const hex: string[] =[];
+      for (let i = 0; i < str.length; i++) {
+        hex.push(str.charCodeAt(i).toString(16));
+      }
+      return '0x' + hex.join('');
+    }
+    
+    
 
-    const encoder = new TextEncoder();
-    const employeeRoleBytes = encoder.encode("qeffe");
-    console.log(employeeRoleBytes);
-    const addemployee = async () => {
+    // Add New Employee
+    const addemployee = async (id: number ,address:string,hourly_rate:  number,overtime_rate: number,role: string) => {
       if (!account) return [];
       
         const transaction:InputTransactionData = {
           data: {
-            function:`${moduleAddress}::PayrollV4::add_employee`,
-            functionArguments:[2, moduleAddress, 12, 12,Array.from(employeeRoleBytes)]
+            function:`${moduleAddress}::PayrollV5::add_employee`,
+            functionArguments:[id, address, hourly_rate, overtime_rate,stringToHex(role)]
           }
         }
       try {
@@ -99,15 +107,14 @@ function Org() {
       } catch (error: any) {
         console.log("Employees!");
       }
-    };*/
-
-    const encoder = new TextEncoder();
-    const employeeRoleBytes = encoder.encode("qeffe");
-    async function getEmployeesByRole(accountAddress :string, role: Uint8Array) {
+    };
+    
+    // Find Employee By Role
+    async function getEmployeesByRole(accountAddress :string, role: string) {
         const payload = {
-          function: `${moduleAddress}::PayrollV4::get_employees_by_role`,
+          function: `${moduleAddress}::PayrollV5::get_employees_by_role`,
           type_arguments:[],
-          arguments:[accountAddress,role],
+          arguments:[accountAddress,stringToHex("low")],
         };
       
         try {
@@ -122,9 +129,10 @@ function Org() {
       };
 
 
+      // Get Specific Employee Info
       const getEmployeeInfo = async (accountAddress : string) => {
         const payload = {
-          function: `${moduleAddress}::PayrollV4::get_employee_characteristics`,
+          function: `${moduleAddress}::PayrollV5::get_employee_characteristics`,
           type_arguments:[],
           arguments:[accountAddress],
         };
@@ -132,20 +140,65 @@ function Org() {
         try {
           const employeeInfo = await client.view(payload);
           console.log("Employee Info:", employeeInfo);
+          //setEmployees(employeeInfo);
           // Process the employeeInfo as needed
         } catch (error) {
           console.error("Error fetching employee info:", error);
         }
       };
 
-  
+    // Record Daily Hours
+    const record_hours = async (id: bigint, hours_worked: bigint,overtime_hours: bigint) => {
+      if (!account) return [];
+      
+        const transaction:InputTransactionData = {
+          data: {
+            function:`${moduleAddress}::PayrollV5::record_hours`,
+            functionArguments:[id, hours_worked, overtime_hours]
+          }
+        }
+      try {
+        // sign and submit transaction to chain
+        const response = await signAndSubmitTransaction(transaction);
+        // wait for transaction
+        await aptos.waitForTransaction({transactionHash:response.hash});
+        console.log("Hours added");
+      } catch (error: any) {
+        console.log("There is Problem!");
+      }
+    };
 
     
       return (
         
-        <div >
+      <div >
          <h1>Organazation Section</h1>
-
+         <div>
+      <Button
+        type="primary"
+        onClick={() => getEmployeeInfo(account?.address as string)}
+      >
+        Get Employee Info
+      </Button>
+      {employee && (
+        <div>
+          <h2>Employee Information</h2>
+          <p>ID: {employee.id}</p>
+          <p>Address: {employee.address}</p>
+          <p>Hourly Rate: {employee.hourly_rate}</p>
+          <p>Overtime Rate: {employee.overtime_rate}</p>
+          <p>Hours Worked: {employee.hours_worked}</p>
+          <p>Overtime Hours: {employee.overtime_hours}</p>
+          <p>Attendance: {employee.attendance}</p>
+          <p>Turnover: {employee.turnover}</p>
+          <p>Payroll Errors: {employee.payroll_errors}</p>
+          <p>Last Paid Day: {employee.last_paid_day}</p>
+          <p>Role: {employee.role}</p>
+          <p>Confirmed: {employee.confirmed}</p>
+        </div>
+      )}
+    </div>
+    
         <div className="addEmployee">
             <h3>Add Employee</h3>
             <input value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} placeholder="Employee ID" />
@@ -153,7 +206,7 @@ function Org() {
             <input value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} placeholder="Hourly Rate" />
             <input value={overtimeRate} onChange={(e) => setOvertimeRate(e.target.value)} placeholder="Overtime Rate" />
             <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Role" />
-            <button /*</div>onClick={addemployee}*/>Add Employee</button>
+            <button onClick={() => addemployee(0,"7b3a1639f5fbe11f3a92ca1257bb1e9be4742a3ba99a27448dbfe11963d60a55",1,15,"low")}>Add Employee</button>
           </div>
           <br />
           <br />
@@ -163,16 +216,15 @@ function Org() {
             <h3>Find Employ By Role</h3>
               { /*Input for the role */}
               <input
-                type="text"
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
+                onChange={(e) => setRole1(e.target.value)}
                 placeholder="Enter role"
               />
 
               {/* Button to fetch employees by role */}
               <Button
                 type="primary"
-                onClick={() => getEmployeesByRole(account?.address as string, employeeRoleBytes)}
+                onClick={() => getEmployeesByRole("7b3a1639f5fbe11f3a92ca1257bb1e9be4742a3ba99a27448dbfe11963d60a55", "fsfe")}
               >
                 Get Employees By Role
               </Button>
@@ -187,6 +239,19 @@ function Org() {
                 ))}
               </div>
         </div>
+
+        <div className="RecordHours">
+            <h3>Add Daily Hours</h3>
+            <input value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} placeholder="Employee ID" />
+            <input value={employeeAddress} onChange={(e) => setEmployeeAddress(e.target.value)} placeholder="Employee Address" />
+            <input value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} placeholder="Hourly Rate" />
+            <input value={overtimeRate} onChange={(e) => setOvertimeRate(e.target.value)} placeholder="Overtime Rate" />
+            <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Role" />
+            <button onClick={() => addemployee( Number(employeeId), employeeAddress,Number(hourlyRate),Number(overtimeRate),role)}>Add Employee</button>
+          </div>
+
+
+
         </div>
       );
     }

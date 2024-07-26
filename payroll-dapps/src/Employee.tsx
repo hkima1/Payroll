@@ -77,7 +77,7 @@ function Employee() {
     // Employee fetch data ::
     const getEmployeeInfo = async (accountAddress : string) => {
       const payload = {
-        function: `${moduleAddress}::PayrollV4::get_employee_characteristics`,
+        function: `${moduleAddress}::PayrollV5::get_employee_characteristics`,
         type_arguments:[],
         arguments:[accountAddress],
       };
@@ -133,12 +133,12 @@ function Employee() {
 
 
 
-    const confirmEmployee = async (employeeAddress :string, confirmation : boolean) => {
+    const confirmEmployee = async (confirmation : boolean) => {
       // The account that will sign the transaction
       const transaction:InputTransactionData = {
         data: {
-          function:`${moduleAddress}::PayrollV4::confirm_employee`,
-          functionArguments:[employeeAddress, confirmation]
+          function:`${moduleAddress}::PayrollV5::confirm_employee`,
+          functionArguments:[confirmation]
         }
       }
 
@@ -162,7 +162,7 @@ function Employee() {
         try {
           const notificationListResource = await aptosClient.getAccountResource({
             accountAddress: account.address,
-            resourceType:`${moduleAddress}::PayrollV4::NotificationList`
+            resourceType:`${moduleAddress}::PayrollV5::NotificationList`
           });
     
           // Assuming notifications are sorted with the newest first
@@ -222,8 +222,11 @@ function Employee() {
               </List.Item>
             )}
           />
+          <Button onClick={()=>confirmEmployee(true)} type="primary">
+              Confirm Employee
+          </Button>
       </div>
-
+          
 
       <div className="Notifications" >
       <h2>Latest Notifications</h2>
