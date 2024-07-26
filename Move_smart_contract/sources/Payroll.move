@@ -107,7 +107,7 @@ module Payroll_addr::PayrollV5 {
     // Searching for employer by their work ::
 
      #[view]
-    public fun get_employees_by_role( address: address, role: vector<u8>): vector<Employee> acquires PayrollSystem {
+    public fun get_employees_by_role( role: vector<u8>): vector<Employee> acquires PayrollSystem {
         let payroll = borrow_global_mut<PayrollSystem>(account_address);
         let employees_with_role = vector::empty<Employee>();
         let length = vector::length(&payroll.employees);

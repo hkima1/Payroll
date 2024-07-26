@@ -110,11 +110,11 @@ function Org() {
     };
     
     // Find Employee By Role
-    async function getEmployeesByRole(accountAddress :string, role: string) {
+    async function getEmployeesByRole(role: string) {
         const payload = {
           function: `${moduleAddress}::PayrollV5::get_employees_by_role`,
           type_arguments:[],
-          arguments:[accountAddress,stringToHex("low")],
+          arguments:[stringToHex(role)],
         };
       
         try {
@@ -148,7 +148,7 @@ function Org() {
       };
 
     // Record Daily Hours
-    const record_hours = async (id: bigint, hours_worked: bigint,overtime_hours: bigint) => {
+    const record_hours = async (id: number, hours_worked: number,overtime_hours: number) => {
       if (!account) return [];
       
         const transaction:InputTransactionData = {
@@ -206,7 +206,7 @@ function Org() {
             <input value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} placeholder="Hourly Rate" />
             <input value={overtimeRate} onChange={(e) => setOvertimeRate(e.target.value)} placeholder="Overtime Rate" />
             <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Role" />
-            <button onClick={() => addemployee(0,"7b3a1639f5fbe11f3a92ca1257bb1e9be4742a3ba99a27448dbfe11963d60a55",1,15,"low")}>Add Employee</button>
+            <button onClick={() => addemployee(parseInt(employeeId, 10),employeeAddress,parseInt(hourlyRate, 10),parseInt(overtimeRate, 10),stringToHex(role))}>Add Employee</button>
           </div>
           <br />
           <br />
@@ -224,7 +224,7 @@ function Org() {
               {/* Button to fetch employees by role */}
               <Button
                 type="primary"
-                onClick={() => getEmployeesByRole("7b3a1639f5fbe11f3a92ca1257bb1e9be4742a3ba99a27448dbfe11963d60a55", "fsfe")}
+                onClick={() => getEmployeesByRole(role)}
               >
                 Get Employees By Role
               </Button>
